@@ -1,5 +1,21 @@
 import { supabaseAdmin } from '../config/supabase.js';
 
+export const getSubUsers = async (req, res) => {
+  try {
+    const creatorId = req.user.id; // Get ID of the logged-in Admin/Dept Head
+    
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('parent_id', creatorId); // Fetch only users THIS admin created
+
+    if (error) throw error;
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 export const createSubUser = async (req, res) => {
   try {
     const { email, password, fullName, role, department, year, section } = req.body;
