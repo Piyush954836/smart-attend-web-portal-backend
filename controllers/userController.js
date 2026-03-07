@@ -2,12 +2,11 @@ import { supabaseAdmin } from '../config/supabase.js';
 
 export const getSubUsers = async (req, res) => {
   try {
-    const creatorId = req.user.id; // Get ID of the logged-in Admin/Dept Head
-    
+    const creatorId = req.user.id;
     const { data, error } = await supabaseAdmin
       .from('profiles')
       .select('*')
-      .eq('parent_id', creatorId); // Fetch only users THIS admin created
+      .eq('parent_id', creatorId);
 
     if (error) throw error;
     res.status(200).json(data);
@@ -19,8 +18,11 @@ export const getSubUsers = async (req, res) => {
 export const createSubUser = async (req, res) => {
   try {
     const { email, password, fullName, role, department, year, section } = req.body;
-    const creator = req.user; // From Middleware
+    const creator = req.user; 
     const creatorRole = creator.user_metadata.role;
+
+    // Resolve what the new user's department should be
+    const finalDept = creatorRole === 'super_admin' ? department : creator.user_metadata.department;
 
     // Hierarchy Validation
     const canCreate = 
@@ -30,10 +32,18 @@ export const createSubUser = async (req, res) => {
 
     if (!canCreate) return res.status(403).json({ error: "Invalid Hierarchy Creation Attempt" });
 
-    // 1. Create Auth User
+    // 1. Create Auth User (Now including full metadata to prevent future NULLs)
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email, password, email_confirm: true,
-      user_metadata: { role, fullName }
+      email, 
+      password, 
+      email_confirm: true,
+      user_metadata: { 
+        role, 
+        fullName, 
+        department: finalDept, 
+        year: year || null, 
+        section: section || null 
+      }
     });
     if (authError) throw authError;
 
@@ -41,8 +51,9 @@ export const createSubUser = async (req, res) => {
     const { error: profileError } = await supabaseAdmin.from('profiles').insert([{
       id: authUser.user.id,
       full_name: fullName,
+      email: email, // Added email to profile for easier management
       role,
-      department: creatorRole === 'super_admin' ? department : creator.user_metadata.department,
+      department: finalDept,
       year: year || null,
       section: section || null,
       parent_id: creator.id
