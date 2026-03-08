@@ -36,8 +36,14 @@ export const getMyStudents = async (req, res) => {
 export const enrollStudent = async (req, res) => {
   try {
     const { 
-      full_name, roll_number, section, year, 
-      phone_number, parent_name, parent_phone_number 
+      full_name, 
+      roll_number, 
+      email,           // New Field
+      section, 
+      year, 
+      phone_number, 
+      parent_name, 
+      parent_phone_number 
     } = req.body;
     
     const context = await resolveCreatorContext(req.user);
@@ -48,6 +54,7 @@ export const enrollStudent = async (req, res) => {
         {
           full_name,
           roll_number,
+          email,               // Added to insert
           phone_number,
           parent_name,
           parent_phone_number,
@@ -60,7 +67,10 @@ export const enrollStudent = async (req, res) => {
       .select();
 
     if (error) {
-      if (error.code === '23505') return res.status(400).json({ error: "Roll number already exists." });
+      if (error.code === '23505') {
+        const field = error.message.includes('email') ? 'Email' : 'Roll number';
+        return res.status(400).json({ error: `${field} already exists.` });
+      }
       throw error;
     }
 
@@ -80,7 +90,12 @@ export const bulkImportStudents = async (req, res) => {
     }
 
     const enrichedStudents = students.map(s => ({
-      ...s,
+      full_name: s.full_name,
+      roll_number: s.roll_number,
+      email: s.email,          // Added to bulk mapping
+      phone_number: s.phone_number,
+      parent_name: s.parent_name,
+      parent_phone_number: s.parent_phone_number,
       department: context.department,
       mentor_id: req.user.id,
       year: s.year || context.year,
@@ -90,7 +105,7 @@ export const bulkImportStudents = async (req, res) => {
 
     const { error } = await supabaseAdmin.from('students').insert(enrichedStudents);
     if (error) {
-        if (error.code === '23505') return res.status(400).json({ error: "Duplicate roll numbers detected." });
+        if (error.code === '23505') return res.status(400).json({ error: "Duplicate roll numbers or emails detected." });
         throw error;
     }
 
