@@ -1,20 +1,40 @@
 import { supabase, supabaseAdmin } from '../config/supabase.js';
 
 /**
- * 1. Bulk Upload Schedule
- * Used for initial setup or adding multiple slots at once.
+ * 1. Create Single Schedule Slot (Manual Entry)
+ * Handles POST /api/schedules
+ */
+export const createScheduleSlot = async (req, res) => {
+  try {
+    const facultyId = req.user.id;
+    
+    // Insert single slot with faculty_id from JWT
+    const { data, error } = await supabaseAdmin
+      .from('schedules')
+      .insert([{ ...req.body, faculty_id: facultyId }])
+      .select();
+
+    if (error) throw error;
+    res.status(201).json({ message: "Slot created successfully", data: data[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/**
+ * 2. Bulk Upload Schedule
+ * Corrected to look for 'schedules' key from frontend
  */
 export const uploadSchedule = async (req, res) => {
   try {
-    const { scheduleSlots } = req.body; 
+    const { schedules } = req.body; // Changed from scheduleSlots to match frontend
     const facultyId = req.user.id;
 
-    if (!Array.isArray(scheduleSlots) || scheduleSlots.length === 0) {
-      return res.status(400).json({ error: "Invalid schedule format. Expected an array of slots." });
+    if (!Array.isArray(schedules) || schedules.length === 0) {
+      return res.status(400).json({ error: "Invalid schedule format. Expected an array." });
     }
 
-    // Enrich slots with faculty_id from the authenticated user
-    const enrichedSlots = scheduleSlots.map(slot => ({
+    const enrichedSlots = schedules.map(slot => ({
       ...slot,
       faculty_id: facultyId
     }));
@@ -25,7 +45,6 @@ export const uploadSchedule = async (req, res) => {
       .select();
 
     if (error) throw error;
-
     res.status(201).json({ message: "Schedule uploaded successfully", count: data.length });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -33,13 +52,11 @@ export const uploadSchedule = async (req, res) => {
 };
 
 /**
- * 2. Get My Schedule
- * Returns all slots for the logged-in faculty member, ordered by day and time.
+ * 3. Get My Schedule
  */
 export const getMySchedule = async (req, res) => {
   try {
     const facultyId = req.user.id;
-
     const { data, error } = await supabase
       .from('schedules')
       .select('*')
@@ -55,8 +72,7 @@ export const getMySchedule = async (req, res) => {
 };
 
 /**
- * 3. Update Specific Slot
- * Allows manual editing of a single class/slot.
+ * 4. Update Specific Slot
  */
 export const updateScheduleSlot = async (req, res) => {
   try {
@@ -64,7 +80,6 @@ export const updateScheduleSlot = async (req, res) => {
     const updateData = req.body;
     const facultyId = req.user.id;
 
-    // Security: Ensure the faculty member owns this slot
     const { data: checkSlot, error: fetchError } = await supabaseAdmin
       .from('schedules')
       .select('faculty_id')
@@ -88,7 +103,7 @@ export const updateScheduleSlot = async (req, res) => {
 };
 
 /**
- * 4. Delete Specific Slot
+ * 5. Delete Specific Slot
  */
 export const deleteScheduleSlot = async (req, res) => {
   try {
@@ -99,7 +114,7 @@ export const deleteScheduleSlot = async (req, res) => {
       .from('schedules')
       .delete()
       .eq('id', id)
-      .eq('faculty_id', facultyId); // Inline ownership check
+      .eq('faculty_id', facultyId);
 
     if (error) throw error;
     res.status(200).json({ message: "Slot deleted successfully" });

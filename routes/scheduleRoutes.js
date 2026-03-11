@@ -1,5 +1,6 @@
 import express from 'express';
 import { 
+  createScheduleSlot,
   uploadSchedule, 
   getMySchedule, 
   updateScheduleSlot, 
@@ -9,16 +10,17 @@ import { protect, authorize } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Get the logged-in faculty's timetable
+// 1. Single Manual Entry (Handles the 404 you were seeing)
+router.post('/', protect, authorize('mentor', 'faculty'), createScheduleSlot);
+
+// 2. Get the logged-in faculty's timetable
 router.get('/my-schedule', protect, getMySchedule);
 
-// Bulk upload new slots (Faculty/Mentors only)
+// 3. Bulk upload new slots
 router.post('/upload', protect, authorize('mentor', 'faculty'), uploadSchedule);
 
-// Edit a specific slot by ID (Faculty/Mentors only)
+// 4. Edit/Delete specific slots
 router.put('/:id', protect, authorize('mentor', 'faculty'), updateScheduleSlot);
-
-// Delete a specific slot by ID (Faculty/Mentors only)
 router.delete('/:id', protect, authorize('mentor', 'faculty'), deleteScheduleSlot);
 
 export default router;
