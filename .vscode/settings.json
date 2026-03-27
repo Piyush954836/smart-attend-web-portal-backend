@@ -17,7 +17,6 @@
     "--limit-results=100",
     "--ranking-model=decision_forest",
     "--rename-file-limit=50",
-    "--malloc-trim=1",
     "--parse-forwarding-functions=0",
     "--pch-storage=disk",
     "--use-dirty-headers=0"
