@@ -2,19 +2,26 @@ import express from 'express';
 import { 
   getMyStudents, 
   bulkImportStudents, 
-  enrollStudent 
+  enrollStudent,
+  updateFaceEmbedding,
+  startAiEnrollment // Import the new AI-trigger function
 } from '../controllers/studentController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// 1. Get students (Accessible by all roles; RLS filters the data based on user scope)
+// 1. Student Records Management
 router.get('/', protect, authorize('super_admin', 'dept_head', 'mentor', 'faculty', 'staff'), getMyStudents);
 
-// 2. Single Student Enrollment (Handled by Dept Heads, Mentors, or Faculty)
+// 2. Enrollment Methods
 router.post('/enroll', protect, authorize('dept_head', 'mentor', 'faculty'), enrollStudent);
-
-// 3. Bulk Import (Typically handled by Mentors or Dept Heads for large batches)
 router.post('/bulk-import', protect, authorize('dept_head', 'mentor'), bulkImportStudents);
+
+// 3. --- NEW: AI Engine Integration Route ---
+// This route triggers the Python AI Engine to start capturing 512-dim vectors
+router.post('/start-ai-enrollment', protect, authorize('student'), startAiEnrollment);
+
+// 4. Manual/Browser-based Updates (Fallback)
+router.put('/update-face', protect, authorize('student'), updateFaceEmbedding);
 
 export default router;
