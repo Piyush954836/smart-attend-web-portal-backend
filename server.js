@@ -7,7 +7,7 @@ import attendanceRoutes from './routes/attendanceRoutes.js';
 
 const app = express();
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://6q9c843r-5173.inc1.devtunnels.ms', 'http://smart-attend-frontend.vercel.app'],
+  origin: ['http://localhost:5173', 'https://6q9c843r-5173.inc1.devtunnels.ms', 'https://smart-attend-frontend.vercel.app'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
